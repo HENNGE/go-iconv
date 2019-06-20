@@ -12,6 +12,7 @@ var testData = []struct{ utf8, other, otherEncoding string }{
 	{"これは漢字です。", "S0\x8c0o0\"oW[g0Y0\x020", "UTF-16LE"},
 	{"これは漢字です。", "0S0\x8c0oo\"[W0g0Y0\x02", "UTF-16BE"},
 	{"€1 is cheap", "\xa41 is cheap", "ISO-8859-15"},
+	{"猫", "\x94\x4c", "SJIS"},
 	{"", "", "SJIS"},
 }
 

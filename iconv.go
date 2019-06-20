@@ -114,6 +114,8 @@ import (
 	"unsafe"
 )
 
+const defaultBufSize = 4096
+
 var EINVAL = syscall.Errno(C.ICONV_EINVAL)
 var EILSEQ = syscall.Errno(C.ICONV_EILSEQ)
 var E2BIG = syscall.Errno(C.ICONV_E2BIG)
@@ -162,7 +164,7 @@ func (cd *Iconv) Conv(input string) (result string, err error) {
 	}
 
 	inbuf := []byte(input)
-	outbuf := make([]byte, len(inbuf))
+	outbuf := make([]byte, defaultBufSize)
 	inbytes := C.size_t(len(inbuf))
 	inptr := &inbuf[0]
 
@@ -188,7 +190,7 @@ func (cd *Iconv) ConvBytes(inbuf []byte) (result []byte, err error) {
 		return []byte{}, nil
 	}
 
-	outbuf := make([]byte, len(inbuf)*3)
+	outbuf := make([]byte, defaultBufSize)
 	inbytes := C.size_t(len(inbuf))
 	inptr := &inbuf[0]
 
