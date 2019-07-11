@@ -8,7 +8,6 @@ package iconv
 #include <windows.h>
 #include <errno.h>
 
-typedef int* uintptr;
 typedef int iconv_t;
 
 static HMODULE iconv_lib = NULL;
@@ -24,8 +23,8 @@ static int* (*iconv_errno) (void) = NULL;
 #define ICONV_EILSEQ 42
 
 size_t
-_iconv(iconv_t cd, const uintptr inbuf, size_t *inbytesleft, uintptr outbuf, size_t *outbytesleft) {
-  return iconv(cd, (const char**)inbuf, inbytesleft, (char**)outbuf, outbytesleft);
+_iconv(iconv_t cd, char *inbuf, size_t *inbytesleft, char *outbuf, size_t *outbytesleft) {
+  return iconv(cd, &inbuf, inbytesleft, &outbuf, outbytesleft);
 }
 
 static iconv_t
@@ -78,16 +77,14 @@ _iconv_init(const char* iconv_dll) {
 #define ICONV_EILSEQ EILSEQ
 #define ICONV_ERRNO  errno
 
-typedef int* uintptr;
-
 int
 _iconv_init(const char* iconv_dll) {
   return 0;
 }
 
 size_t
-_iconv(iconv_t cd, const uintptr inbuf, size_t *inbytesleft, uintptr outbuf, size_t *outbytesleft) {
-  return iconv(cd, (char**)inbuf, inbytesleft, (char**)outbuf, outbytesleft);
+_iconv(iconv_t cd, char *inbuf, size_t *inbytesleft, char *outbuf, size_t *outbytesleft) {
+  return iconv(cd, &inbuf, inbytesleft, &outbuf, outbytesleft);
 }
 
 static iconv_t
@@ -164,20 +161,21 @@ func (cd *Iconv) Conv(input string) (result string, err error) {
 	}
 
 	inbuf := []byte(input)
-	outbuf := make([]byte, defaultBufSize)
-	inbytes := C.size_t(len(inbuf))
-	inptr := &inbuf[0]
+	inbytesleft := C.size_t(len(inbuf))
 
-	for inbytes > 0 {
-		outbytes := C.size_t(len(outbuf))
-		outptr := &outbuf[0]
+	outbuf := make([]byte, defaultBufSize)
+	for inbytesleft > 0 {
+		outbytesleft := C.size_t(len(outbuf))
 		_, err := C._iconv(cd.pointer,
-			C.uintptr(unsafe.Pointer(&inptr)), &inbytes,
-			C.uintptr(unsafe.Pointer(&outptr)), &outbytes)
-		buf.Write(outbuf[:len(outbuf)-int(outbytes)])
+			(*C.char)(unsafe.Pointer(&inbuf[0])), &inbytesleft,
+			(*C.char)(unsafe.Pointer(&outbuf[0])), &outbytesleft)
+		buf.Write(outbuf[:len(outbuf)-int(outbytesleft)])
 		if err != nil && err != E2BIG {
 			return buf.String(), err
 		}
+
+		inbuf = inbuf[len(inbuf)-int(inbytesleft):]
+		inbytesleft = C.size_t(len(inbuf))
 	}
 
 	return buf.String(), nil
@@ -190,20 +188,21 @@ func (cd *Iconv) ConvBytes(inbuf []byte) (result []byte, err error) {
 		return []byte{}, nil
 	}
 
-	outbuf := make([]byte, defaultBufSize)
-	inbytes := C.size_t(len(inbuf))
-	inptr := &inbuf[0]
+	inbytesleft := C.size_t(len(inbuf))
 
-	for inbytes > 0 {
-		outbytes := C.size_t(len(outbuf))
-		outptr := &outbuf[0]
+	outbuf := make([]byte, defaultBufSize)
+	for inbytesleft > 0 {
+		outbytesleft := C.size_t(len(outbuf))
 		_, err := C._iconv(cd.pointer,
-			C.uintptr(unsafe.Pointer(&inptr)), &inbytes,
-			C.uintptr(unsafe.Pointer(&outptr)), &outbytes)
-		buf.Write(outbuf[:len(outbuf)-int(outbytes)])
+			(*C.char)(unsafe.Pointer(&inbuf[0])), &inbytesleft,
+			(*C.char)(unsafe.Pointer(&outbuf[0])), &outbytesleft)
+		buf.Write(outbuf[:len(outbuf)-int(outbytesleft)])
 		if err != nil && err != E2BIG {
 			return buf.Bytes(), err
 		}
+
+		inbuf = inbuf[len(inbuf)-int(inbytesleft):]
+		inbytesleft = C.size_t(len(inbuf))
 	}
 
 	return buf.Bytes(), nil
