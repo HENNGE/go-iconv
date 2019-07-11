@@ -175,7 +175,6 @@ func (cd *Iconv) Conv(input string) (result string, err error) {
 		}
 
 		inbuf = inbuf[len(inbuf)-int(inbytesleft):]
-		inbytesleft = C.size_t(len(inbuf))
 	}
 
 	return buf.String(), nil
@@ -202,7 +201,6 @@ func (cd *Iconv) ConvBytes(inbuf []byte) (result []byte, err error) {
 		}
 
 		inbuf = inbuf[len(inbuf)-int(inbytesleft):]
-		inbytesleft = C.size_t(len(inbuf))
 	}
 
 	return buf.Bytes(), nil
