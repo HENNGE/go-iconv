@@ -44,9 +44,14 @@ var testData = []testCase{
 		encoded:      "\x94\x4c",
 	},
 	{
-		utf8:         "",
-		encoded:      "",
-		encodingName: "SJIS",
+		utf8:         "①②",
+		encodingName: "EUC-JISX0213",
+		encoded:      "\xad\xa1\xad\xa2",
+	},
+	{
+		utf8:         "①②",
+		encodingName: "EUC-JIS-2004",
+		encoded:      "\xad\xa1\xad\xa2",
 	},
 }
 
