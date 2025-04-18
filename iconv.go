@@ -1,6 +1,4 @@
-//
 // iconv.go
-//
 package iconv
 
 /*
@@ -100,6 +98,7 @@ _iconv_close(iconv_t cd) {
 #endif
 
 #cgo darwin LDFLAGS: -liconv
+#cgo linux LDFLAGS: -liconv
 */
 import "C"
 

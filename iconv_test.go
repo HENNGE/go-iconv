@@ -11,6 +11,8 @@ type testCase struct {
 
 	encodingName string // encodingName that libiconv accepts
 	encoded      string // hex representation of encoded string in encodingName
+
+	oneway bool // true if roundtrip conversion doesn't work
 }
 
 func (tc testCase) String() string {
@@ -45,13 +47,19 @@ var testData = []testCase{
 	},
 	{
 		utf8:         "①②",
-		encodingName: "EUC-JISX0213",
+		encodingName: "EUC-JISX0213", // this is only available when GNU libiconv is built with  --enable-extra-encodings
 		encoded:      "\xad\xa1\xad\xa2",
 	},
 	{
 		utf8:         "①②",
-		encodingName: "EUC-JIS-2004",
+		encodingName: "EUC-JIS-2004", // this is only available when GNU libiconv is built with  --enable-extra-encodings
 		encoded:      "\xad\xa1\xad\xa2",
+	},
+	{
+		utf8:         "髙ⅰ",
+		encodingName: "ISO-2022-JP-MS", // this is only available in GNU libiconv
+		encoded:      "\x1b$B|b|q\x1b(B",
+		oneway:       true,
 	},
 }
 
@@ -60,16 +68,19 @@ func TestIconv(t *testing.T) {
 		t.Run(data.String(), func(t *testing.T) {
 			cd, err := Open("UTF-8", data.encodingName)
 			if err != nil {
-				t.Errorf("Error on opening: %s", err)
+				t.Errorf("Error on opening: %s (perhaps you're not using GNU libiconv?)", err)
+				return
 			}
 
 			str, err := cd.Conv(data.encoded)
 			if err != nil {
 				t.Errorf("Error on conversion: %s", err)
+				return
 			}
 
 			if str != data.utf8 {
 				t.Errorf("Unexpected value: %#v (expected %#v)", str, data.utf8)
+				return
 			}
 
 			err = cd.Close()
@@ -83,23 +94,31 @@ func TestIconv(t *testing.T) {
 func TestIconvReverse(t *testing.T) {
 	for _, data := range testData {
 		t.Run(data.String(), func(t *testing.T) {
+			if data.oneway {
+				t.Skip("roundtrip conversion doesn't work")
+			}
+
 			cd, err := Open(data.encodingName, "UTF-8")
 			if err != nil {
-				t.Errorf("Error on opening: %s", err)
+				t.Errorf("Error on opening: %s (perhaps you're not using GNU libiconv?)", err)
+				return
 			}
 
 			str, err := cd.Conv(data.utf8)
 			if err != nil {
 				t.Errorf("Error on conversion: %s", err)
+				return
 			}
 
 			if str != data.encoded {
 				t.Errorf("Unexpected value: %#v (expected %#v)", str, data.encoded)
+				return
 			}
 
 			err = cd.Close()
 			if err != nil {
 				t.Errorf("Error on close: %s", err)
+				return
 			}
 		})
 	}
