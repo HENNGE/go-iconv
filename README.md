@@ -8,14 +8,14 @@
 
 **Linux (via Docker)**:
 ```console
-docker build -f Dockerfile.test -t local/go-iconv-test .
-docker run -it -v .:/usr/src/app local/go-iconv-test bash
+docker compose build
+docker compose run --rm builder bash
 go test -v
 ```
 
 **Linux (Native)**:
 ```console
-# consult with Dockerfile.test on how to install libiconv on your system
+# run ./scripts/build_libiconv_debian.sh to install libiconv on your system
 go test -v
 ```
 
