@@ -1,0 +1,9 @@
+FROM golang:1.24
+
+ARG LIBICONV_VERSION=1.18
+
+WORKDIR /usr/src/app
+
+COPY scripts .
+
+RUN ./build_libiconv_debian.sh
