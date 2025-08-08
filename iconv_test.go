@@ -1,9 +1,13 @@
-// iconv_test.go
-package iconv
+package iconv_test
 
 import (
 	"fmt"
+	"os"
 	"testing"
+
+	"github.com/HENNGE/go-iconv"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testCase struct {
@@ -66,7 +70,7 @@ var testData = []testCase{
 func TestIconv(t *testing.T) {
 	for _, data := range testData {
 		t.Run(data.String(), func(t *testing.T) {
-			cd, err := Open("UTF-8", data.encodingName)
+			cd, err := iconv.Open("UTF-8", data.encodingName)
 			if err != nil {
 				t.Errorf("Error on opening: %s (perhaps you're not using GNU libiconv?)", err)
 				return
@@ -98,7 +102,7 @@ func TestIconvReverse(t *testing.T) {
 				t.Skip("roundtrip conversion doesn't work")
 			}
 
-			cd, err := Open(data.encodingName, "UTF-8")
+			cd, err := iconv.Open(data.encodingName, "UTF-8")
 			if err != nil {
 				t.Errorf("Error on opening: %s (perhaps you're not using GNU libiconv?)", err)
 				return
@@ -125,14 +129,34 @@ func TestIconvReverse(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
-	_, err := Open("INVALID_ENCODING", "INVALID_ENCODING")
-	if err != EINVAL {
-		t.Errorf("Unexpected error: %s (expected %s)", err, EINVAL)
+	_, err := iconv.Open("INVALID_ENCODING", "INVALID_ENCODING")
+	if err != iconv.EINVAL {
+		t.Errorf("Unexpected error: %s (expected %s)", err, iconv.EINVAL)
 	}
 
-	cd, _ := Open("ISO-8859-15", "UTF-8")
+	cd, _ := iconv.Open("ISO-8859-15", "UTF-8")
 	_, err = cd.Conv("\xc3a")
-	if err != EILSEQ {
-		t.Errorf("Unexpected error: %s (expected %s)", err, EILSEQ)
+	if err != iconv.EILSEQ {
+		t.Errorf("Unexpected error: %s (expected %s)", err, iconv.EILSEQ)
 	}
+}
+
+func TestLargeText(t *testing.T) {
+	kokoroShiftJIS, err := os.ReadFile("testdata/kokoro_shift_jis.txt")
+	require.NoError(t, err)
+
+	kokoroUTF8, err := os.ReadFile("testdata/kokoro_utf8.txt")
+	require.NoError(t, err)
+
+	cd, err := iconv.Open("UTF-8", "SHIFT_JISX0213")
+	require.NoError(t, err)
+
+	t.Run("Compaire with converted UTF8", func(t *testing.T) {
+		converted, err := cd.ConvBytes(kokoroShiftJIS)
+		if err != nil {
+			require.NoError(t, err)
+		}
+
+		assert.Equal(t, string(kokoroUTF8), string(converted))
+	})
 }
